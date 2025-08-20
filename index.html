@@ -112,7 +112,6 @@
     </style>
   </head>
   <body>
-    <!-- Simple inline SVG clipart illustrating a calendar -->
     <div class="container">
       <svg
         class="clipart"
@@ -129,24 +128,45 @@
     <script type="text/babel">
       const ADMIN_EMAIL = 'haider.sahib@greenzone-oasis.com';
       const ADMIN_PASSWORD = 'Npsfaa@k3s';
+      // Derive admin name by splitting email (before @) and capitalizing parts
+      const deriveName = email => {
+        return email
+          .split('@')[0]
+          .split('.')
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ');
+      };
 
       function getUsers() {
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        let users = JSON.parse(localStorage.getItem('users') || '[]');
+        // Ensure admin user exists with a name
         if (!users.find(u => u.email === ADMIN_EMAIL)) {
-          users.push({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD, role: 'admin' });
+          users.push({
+            name: deriveName(ADMIN_EMAIL),
+            email: ADMIN_EMAIL,
+            password: ADMIN_PASSWORD,
+            role: 'admin',
+          });
           localStorage.setItem('users', JSON.stringify(users));
         }
         return users;
       }
-      function saveUsers(users) { localStorage.setItem('users', JSON.stringify(users)); }
-      function getData(key) { return JSON.parse(localStorage.getItem(key) || '[]'); }
-      function saveData(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+      function saveUsers(users) {
+        localStorage.setItem('users', JSON.stringify(users));
+      }
+      function getData(key) {
+        return JSON.parse(localStorage.getItem(key) || '[]');
+      }
+      function saveData(key, data) {
+        localStorage.setItem(key, JSON.stringify(data));
+      }
 
       function App() {
         const [user, setUser] = React.useState(null);
         const [isSignUp, setIsSignUp] = React.useState(false);
         const [loginEmail, setLoginEmail] = React.useState('');
         const [loginPassword, setLoginPassword] = React.useState('');
+        const [signUpName, setSignUpName] = React.useState('');
         const [signUpEmail, setSignUpEmail] = React.useState('');
         const [signUpPassword, setSignUpPassword] = React.useState('');
         const [signUpConfirm, setSignUpConfirm] = React.useState('');
@@ -166,7 +186,9 @@
         const handleLogin = e => {
           e.preventDefault();
           const users = getUsers();
-          const u = users.find(u => u.email === loginEmail && u.password === loginPassword);
+          const u = users.find(
+            u => u.email === loginEmail && u.password === loginPassword
+          );
           if (u) {
             setUser(u);
             setLoginEmail('');
@@ -188,7 +210,12 @@
             setError('User already exists');
             return;
           }
-          const newUser = { email: signUpEmail, password: signUpPassword, role: 'client' };
+          const newUser = {
+            name: signUpName,
+            email: signUpEmail,
+            password: signUpPassword,
+            role: 'client',
+          };
           users.push(newUser);
           saveUsers(users);
           setError('');
@@ -205,15 +232,28 @@
         };
         const submitRequest = e => {
           e.preventDefault();
-          const newRequest = { id: Date.now(), ...formData, status: 'pending' };
+          const newRequest = {
+            id: Date.now(),
+            ...formData,
+            status: 'pending',
+          };
           const newRequests = [...requests, newRequest];
           setRequests(newRequests);
           saveData('requests', newRequests);
-          setFormData({ fullName: '', position: '', date: '', time: '', fromLocation: '', toLocation: '' });
+          setFormData({
+            fullName: '',
+            position: '',
+            date: '',
+            time: '',
+            fromLocation: '',
+            toLocation: '',
+          });
         };
         const approveRequest = id => {
           const req = requests.find(r => r.id === id);
-          const updatedRequests = requests.map(r => (r.id === id ? { ...r, status: 'approved' } : r));
+          const updatedRequests = requests.map(r =>
+            r.id === id ? { ...r, status: 'approved' } : r
+          );
           const newMovement = { ...req, status: 'scheduled' };
           const newMovements = [...movements, newMovement];
           setRequests(updatedRequests);
@@ -222,7 +262,9 @@
           saveData('movements', newMovements);
         };
         const declineRequest = id => {
-          const updatedRequests = requests.map(r => (r.id === id ? { ...r, status: 'declined' } : r));
+          const updatedRequests = requests.map(r =>
+            r.id === id ? { ...r, status: 'declined' } : r
+          );
           setRequests(updatedRequests);
           saveData('requests', updatedRequests);
         };
@@ -270,6 +312,13 @@
                 <div>
                   <h2>Create Account</h2>
                   <form onSubmit={handleSignUp}>
+                    <input
+                      type="text"
+                      placeholder="Full Name"
+                      value={signUpName}
+                      onChange={e => setSignUpName(e.target.value)}
+                      required
+                    />
                     <input
                       type="email"
                       placeholder="Email"
@@ -325,7 +374,9 @@
         return (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: '10px 0' }}>Welcome, {user.email}</h2>
+              <h2 style={{ margin: '10px 0' }}>
+                Welcome, {user.name || deriveName(user.email)}
+              </h2>
               <button onClick={logout}>Log Out</button>
             </div>
             <div className="tabs">

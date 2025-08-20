@@ -4,18 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Movement Scheduler with Supabase</title>
-    <!--
-      This version of the movement scheduler demonstrates how to persist data to
-      a remote Supabase database instead of the browser's localStorage. The
-      original app stored users, requests, movements and invitations directly
-      in the user's browser. That meant each browser had its own copy of the
-      data and an admin couldn't see requests created on another device. By
-      moving persistence to Supabase we centralise our state so that every
-      client sees the same information.  Use your own Supabase project URL
-      and anon key below – you can find these in the Supabase dashboard. The
-      Supabase JavaScript client is imported via CDN as described in the
-      official documentation【830261165282000†L46-L63】.
-    -->
     <style>
       /* Page layout */
       body {
@@ -115,41 +103,22 @@
         font-size: 14px;
       }
     </style>
-    <!-- React and Supabase dependencies. We rely on the global `supabase`
-         variable after loading the client via CDN as described in the Supabase
-         docs【830261165282000†L46-L63】. -->
     <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
   </head>
   <body>
     <div class="container">
-      <!-- Application root -->
       <div id="root"></div>
     </div>
     <script type="text/babel">
-  // Supabase client initialisation and React code here…
-</script>
-      // Replace the placeholders below with your Supabase project credentials.
-      // You can create a new project at https://app.supabase.com and find
-      // the anonymous public key in your project settings. The Supabase
-      // client is created once and reused throughout the application.
       const { createClient } = supabase;
       const SUPABASE_URL = 'https://dpkegvaoldfkuorudnzy.supabase.co';
       const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwa2VndmFvbGRma3VvcnVkbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNzM3MzIsImV4cCI6MjA3MDk0OTczMn0.5sCNX68dJ1ZHT0Wj_HH3HTLwqQzKO2gq_QPtFOXQ4eQ';
       const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
-      
-      // Hard-coded admin credentials. These are added to the database on
-      // startup if no admin user exists. In a production system you'd want
-      // to manage admins differently.
       const ADMIN_EMAIL = 'haider.sahib@greenzone-oasis.com';
       const ADMIN_PASSWORD = 'Npsfaa@k3s';
-
-      // Derive a name from an email address by capitalising each segment
       const deriveName = email => {
         return email
           .split('@')[0]
@@ -157,9 +126,7 @@
           .map(part => part.charAt(0).toUpperCase() + part.slice(1))
           .join(' ');
       };
-
       function App() {
-        // Authentication and global state
         const [user, setUser] = React.useState(null);
         const [loginEmail, setLoginEmail] = React.useState('');
         const [loginPassword, setLoginPassword] = React.useState('');
@@ -177,28 +144,18 @@
         });
         const [usersList, setUsersList] = React.useState([]);
         const [invites, setInvites] = React.useState([]);
-        // Invitation form state
         const [showInviteForm, setShowInviteForm] = React.useState(false);
         const [inviteEmail, setInviteEmail] = React.useState('');
         const [inviteMessage, setInviteMessage] = React.useState('');
-        // Sign‑up via invite state
         const [signUpPassword, setSignUpPassword] = React.useState('');
         const [signUpConfirm, setSignUpConfirm] = React.useState('');
-
-        // If the URL contains ?invite=email@address then this is an invited
-        // user attempting to set their password.
         const inviteEmailParam = React.useMemo(() => {
           const params = new URLSearchParams(window.location.search);
           return params.get('invite');
         }, []);
-
-        // On first render fetch all persisted data from Supabase. Also ensure
-        // that the admin user exists; if not, insert it. Because Supabase
-        // operations are asynchronous, we wrap them in an async function.
         React.useEffect(() => {
           (async () => {
             try {
-              // Check for an existing admin
               const { data: existingAdmin } = await db
                 .from('users')
                 .select('*')
@@ -214,16 +171,12 @@
                   }
                 ]);
               }
-              // Fetch all users
               const { data: userRows } = await db.from('users').select('*');
               setUsersList(userRows || []);
-              // Fetch requests
               const { data: reqRows } = await db.from('requests').select('*');
               setRequests(reqRows || []);
-              // Fetch movements
               const { data: movRows } = await db.from('movements').select('*');
               setMovements(movRows || []);
-              // Fetch invites
               const { data: inviteRows } = await db.from('invites').select('*');
               setInvites(inviteRows || []);
             } catch (err) {
@@ -231,8 +184,6 @@
             }
           })();
         }, []);
-
-        // Handle login
         async function handleLogin(e) {
           e.preventDefault();
           setError('');
@@ -251,23 +202,16 @@
             setError('Invalid credentials');
           }
         }
-
-        // Logout simply clears the user state
         function logout() {
           setUser(null);
           setActiveTab('request');
         }
-
-        // Handle changes in the request form
         function handleFormChange(e) {
           const { name, value } = e.target;
           setFormData(prev => ({ ...prev, [name]: value }));
         }
-
-        // Submit a new movement request and persist to Supabase
         async function submitRequest(e) {
           e.preventDefault();
-          // Build the request object without an id – Supabase will generate one
           const newReq = {
             fullName: formData.fullName,
             position: formData.position,
@@ -282,7 +226,6 @@
             .insert([newReq])
             .select();
           if (!insertErr && inserted && inserted.length > 0) {
-            // Update local state with the new request
             setRequests(prev => [...prev, inserted[0]]);
             setFormData({
               fullName: '',
@@ -296,19 +239,14 @@
             console.error('Failed to insert request', insertErr);
           }
         }
-
-        // Approve a pending request: update its status and add it to movements
         async function approveRequest(id) {
-          // Find the original request object in state
           const req = requests.find(r => r.id === id);
           if (!req) return;
-          // Update request status in the database
           const { data: updatedReqs, error: updateErr } = await db
             .from('requests')
             .update({ status: 'approved' })
             .eq('id', id)
             .select();
-          // Insert corresponding movement
           const movement = {
             fullName: req.fullName,
             position: req.position,
@@ -323,7 +261,6 @@
             .insert([movement])
             .select();
           if (!updateErr && !movErr) {
-            // Update local state
             setRequests(prev => prev.map(r => (r.id === id ? { ...r, status: 'approved' } : r)));
             if (insertedMov && insertedMov.length > 0) {
               setMovements(prev => [...prev, insertedMov[0]]);
@@ -332,8 +269,6 @@
             console.error('Approval error', updateErr || movErr);
           }
         }
-
-        // Decline a pending request by updating its status
         async function declineRequest(id) {
           const { error: updateErr } = await db
             .from('requests')
@@ -345,9 +280,6 @@
             console.error('Decline error', updateErr);
           }
         }
-
-        // Handle the admin sending an invitation. This writes a new invite row
-        // and returns a link the admin can email to the prospective user.
         async function handleInviteSubmit(e) {
           e.preventDefault();
           setInviteMessage('');
@@ -356,7 +288,6 @@
             setInviteMessage('Please provide a valid email.');
             return;
           }
-          // Check if user already exists
           const { data: existingUser } = await db
             .from('users')
             .select('id')
@@ -368,7 +299,6 @@
             setShowInviteForm(false);
             return;
           }
-          // Check if an invitation is already recorded
           const { data: existingInvite } = await db
             .from('invites')
             .select('id')
@@ -380,7 +310,6 @@
             setShowInviteForm(false);
             return;
           }
-          // Record the invitation
           const { data: insertedInv, error: invErr } = await db
             .from('invites')
             .insert([{ email: email, invited: true }])
@@ -396,9 +325,6 @@
             console.error('Invite error', invErr);
           }
         }
-
-        // Handle an invited user setting their password. Creates a new user and
-        // deletes the invite.
         async function handleInviteSignup(e) {
           e.preventDefault();
           setError('');
@@ -407,7 +333,6 @@
             return;
           }
           const email = inviteEmailParam.trim().toLowerCase();
-          // Ensure the user doesn't already exist
           const { data: existingUser } = await db
             .from('users')
             .select('*')
@@ -425,22 +350,15 @@
           };
           const { error: insertErr } = await db.from('users').insert([newUser]);
           if (!insertErr) {
-            // Delete the invite
             await db.from('invites').delete().eq('email', email);
-            // Redirect back to login
             window.location.href = window.location.origin;
           } else {
             console.error('Signup error', insertErr);
             setError('Error creating account');
           }
         }
-
-        // Compute derived lists
         const pendingRequests = requests.filter(r => r.status === 'pending');
         const scheduledMovements = movements;
-
-        // If the user is not logged in we show either the invitation sign‑up
-        // form or the login form.
         if (!user) {
           if (inviteEmailParam) {
             return (
@@ -492,8 +410,6 @@
             </div>
           );
         }
-
-        // Build the tab bar based on the user's role
         const tabs =
           user.role === 'admin'
             ? [
@@ -505,9 +421,7 @@
                 { id: 'request', label: 'Request Movement' },
                 { id: 'agenda', label: 'Agenda' }
               ];
-
         const displayName = user.name || deriveName(user.email);
-
         return (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -525,7 +439,6 @@
                 </button>
               ))}
             </div>
-
             {activeTab === 'request' && (
               <div>
                 <h3>Request Movement</h3>
@@ -578,7 +491,6 @@
                   />
                   <button type="submit">Submit Request</button>
                 </form>
-                {/* Pending requests list for clients */}
                 {pendingRequests.length > 0 && (
                   <div style={{ marginTop: '20px' }}>
                     <h4>Pending Requests</h4>
@@ -612,7 +524,6 @@
                 )}
               </div>
             )}
-
             {activeTab === 'admin' && (
               <div>
                 <h3>Admin Review</h3>
@@ -651,10 +562,8 @@
                 )}
               </div>
             )}
-
             {activeTab === 'users' && (
               <div>
-                {/* Invite button aligned to the right */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
                   <button onClick={() => setShowInviteForm(!showInviteForm)}>Invite</button>
                 </div>
@@ -691,7 +600,6 @@
                 </table>
               </div>
             )}
-
             {activeTab === 'agenda' && (
               <div>
                 <h3>Agenda</h3>
@@ -730,7 +638,6 @@
           </div>
         );
       }
-      // Render the application
       ReactDOM.render(<App />, document.getElementById('root'));
     </script>
   </body>

@@ -47,6 +47,10 @@
         align-items: stretch;
         gap: 10px;
         margin-bottom: 20px;
+        /* Narrow the form so fields are not overly wide */
+        max-width: 360px;
+        margin-left: auto;
+        margin-right: auto;
       }
       input,
       select,
@@ -140,13 +144,8 @@
 
       function App() {
         const [user, setUser] = React.useState(null);
-        const [isSignUp, setIsSignUp] = React.useState(false);
         const [loginEmail, setLoginEmail] = React.useState('');
         const [loginPassword, setLoginPassword] = React.useState('');
-        const [signUpName, setSignUpName] = React.useState('');
-        const [signUpEmail, setSignUpEmail] = React.useState('');
-        const [signUpPassword, setSignUpPassword] = React.useState('');
-        const [signUpConfirm, setSignUpConfirm] = React.useState('');
         const [error, setError] = React.useState('');
         const [activeTab, setActiveTab] = React.useState('request');
         const [requests, setRequests] = React.useState(() => getData('requests'));
@@ -169,25 +168,6 @@
           }
         }
 
-        // Sign-up handler
-        function handleSignUp(e) {
-          e.preventDefault();
-          if (signUpPassword !== signUpConfirm) {
-            setError('Passwords do not match');
-            return;
-          }
-          let users = getUsers();
-          if (users.find(u => u.email === signUpEmail)) {
-            setError('User already exists');
-            return;
-          }
-          const newUser = { name: signUpName || deriveName(signUpEmail), email: signUpEmail, password: signUpPassword, role: 'client' };
-          users.push(newUser);
-          saveUsers(users);
-          setError('');
-          setIsSignUp(false);
-          alert('Account created. Please log in.');
-        }
 
         // Logout
         function logout() {
@@ -233,45 +213,17 @@
         const pendingRequests = requests.filter(r => r.status === 'pending');
         const scheduledMovements = movements;
 
-        // If not logged in, show login/sign-up forms
+        // If not logged in, show only the login form. Sign-up is disabled and must be handled via invitations.
         if (!user) {
           return (
             <div>
-              {!isSignUp ? (
-                <div>
-                  <h2>Login</h2>
-                  <form onSubmit={handleLogin}>
-                    <input type="email" placeholder="Email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required />
-                    <input type="password" placeholder="Password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required />
-                    {error && <div className="error">{error}</div>}
-                    <button type="submit">Login</button>
-                  </form>
-                  <p>
-                    Don’t have an account?{' '}
-                    <button type="button" onClick={() => { setIsSignUp(true); setError(''); }}>
-                      Sign up
-                    </button>
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <h2>Create Account</h2>
-                  <form onSubmit={handleSignUp}>
-                    <input type="text" placeholder="Full Name" value={signUpName} onChange={e => setSignUpName(e.target.value)} />
-                    <input type="email" placeholder="Email" value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} required />
-                    <input type="password" placeholder="Password" value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} required />
-                    <input type="password" placeholder="Confirm Password" value={signUpConfirm} onChange={e => setSignUpConfirm(e.target.value)} required />
-                    {error && <div className="error">{error}</div>}
-                    <button type="submit">Create Account</button>
-                  </form>
-                  <p>
-                    Already have an account?{' '}
-                    <button type="button" onClick={() => { setIsSignUp(false); setError(''); }}>
-                      Log in
-                    </button>
-                  </p>
-                </div>
-              )}
+              <h2>Login</h2>
+              <form onSubmit={handleLogin}>
+                <input type="email" placeholder="Email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required />
+                <input type="password" placeholder="Password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required />
+                {error && <div className="error">{error}</div>}
+                <button type="submit">Login</button>
+              </form>
             </div>
           );
         }

@@ -3,207 +3,249 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KBR Movement Scheduler</title>
+  <title>Movement Scheduler</title>
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #f7f7f7;
-    }
-    .tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .tabs button {
-      padding: 10px 15px;
-      border: none;
-      background-color: #eee;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    .tabs button.active {
-      background-color: #0070f3;
-      color: white;
-    }
-    form.form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    form.form input,
-    form.form select {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    form.form button {
-      padding: 10px 15px;
-      background-color: #0070f3;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    table th, table td {
-      padding: 6px 10px;
-      border: 1px solid #ddd;
-    }
-    table th {
-      background-color: #f0f0f0;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color:#f7f7f7; }
+    .tabs { display:flex; gap:10px; margin-bottom:20px; }
+    .tabs button { padding:10px 15px; border:none; background-color:#eee; cursor:pointer; border-radius:4px; }
+    .tabs button.active { background-color:#0070f3; color:white; }
+    form { margin-bottom:20px; display:flex; flex-direction:column; gap:10px; width:300px; }
+    input, select { padding:8px; border-radius:4px; border:1px solid #ccc; }
+    button { padding:8px 12px; border:none; border-radius:4px; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th,td { padding:8px; border:1px solid #ddd; text-align:left; }
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="root"></div>
   <script type="text/babel">
-    const { useState } = React;
+    const ADMIN_EMAIL = "haider.sahib@greenzone-oasis.com";
+    const ADMIN_PASSWORD = "Npsfaa@k3s";
 
-    const App = () => {
-      const [activeTab, setActiveTab] = useState('request');
-      const [requests, setRequests] = useState([]);
-      const [movements, setMovements] = useState([]);
-      const [formData, setFormData] = useState({
-        traveler: '',
-        position: '',
-        date: '',
-        showtime: '',
-        route: '',
-        notes: ''
+    // Helpers to persist users/requests/movements in localStorage
+    function getUsers() {
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      if (!users.find(u => u.email === ADMIN_EMAIL)) {
+        users.push({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD, role:"admin" });
+        localStorage.setItem("users", JSON.stringify(users));
+      }
+      return users;
+    }
+    function saveUsers(users) { localStorage.setItem("users", JSON.stringify(users)); }
+    function getData(key) { return JSON.parse(localStorage.getItem(key) || "[]"); }
+    function saveData(key,data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+    function App() {
+      const [user,setUser] = React.useState(null);
+      const [isSignUp,setIsSignUp] = React.useState(false);
+      const [loginEmail,setLoginEmail] = React.useState("");
+      const [loginPassword,setLoginPassword] = React.useState("");
+      const [signUpEmail,setSignUpEmail] = React.useState("");
+      const [signUpPassword,setSignUpPassword] = React.useState("");
+      const [signUpConfirm,setSignUpConfirm] = React.useState("");
+      const [error,setError] = React.useState("");
+      const [activeTab,setActiveTab] = React.useState("request");
+      const [requests,setRequests] = React.useState(() => getData("requests"));
+      const [movements,setMovements] = React.useState(() => getData("movements"));
+      const [formData,setFormData] = React.useState({
+        fullName:"",
+        position:"",
+        date:"",
+        time:"",
+        fromLocation:"",
+        toLocation:""
       });
 
-      const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-      };
-
-      const handleRequestSubmit = (e) => {
+      // Login handler
+      function handleLogin(e) {
         e.preventDefault();
-        const id = Date.now().toString();
-        setRequests([...requests, { id, ...formData, status: 'pending' }]);
-        setFormData({ traveler:'', position:'', date:'', showtime:'', route:'', notes:'' });
-      };
-
-      const approveRequest = (id) => {
-        const req = requests.find(r => r.id === id);
-        if (req) {
-          setMovements([...movements, { ...req }]);
-          setRequests(requests.filter(r => r.id !== id));
+        const users = getUsers();
+        const u = users.find(u => u.email === loginEmail && u.password === loginPassword);
+        if(u) {
+          setUser(u);
+          setLoginEmail("");
+          setLoginPassword("");
+          setError("");
+          setActiveTab(u.role === "admin" ? "admin" : "request");
+        } else {
+          setError("Invalid credentials");
         }
-      };
+      }
 
-      const declineRequest = (id) => {
-        setRequests(requests.filter(r => r.id !== id));
-      };
+      // Sign-up handler
+      function handleSignUp(e) {
+        e.preventDefault();
+        if(signUpPassword !== signUpConfirm) {
+          setError("Passwords do not match");
+          return;
+        }
+        let users = getUsers();
+        if(users.find(u => u.email === signUpEmail)) {
+          setError("User already exists");
+          return;
+        }
+        const newUser = { email: signUpEmail, password: signUpPassword, role:"client" };
+        users.push(newUser);
+        saveUsers(users);
+        setError("");
+        setIsSignUp(false);
+        alert("Account created. Please log in.");
+      }
+
+      // Logout
+      function logout() {
+        setUser(null);
+        setActiveTab("request");
+      }
+
+      // Input change for request form
+      function handleFormChange(e) {
+        const { name,value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+      }
+
+      // Submit movement request (client)
+      function submitRequest(e) {
+        e.preventDefault();
+        const newReq = {
+          id: Date.now(),
+          ...formData,
+          status:"pending"
+        };
+        const newRequests = [...requests, newReq];
+        setRequests(newRequests);
+        saveData("requests", newRequests);
+        setFormData({ fullName:"", position:"", date:"", time:"", fromLocation:"", toLocation:"" });
+      }
+
+      // Admin approves request → moves to movements
+      function approveRequest(id) {
+        const req = requests.find(r => r.id === id);
+        const updatedRequests = requests.map(r => r.id === id ? { ...r, status:"approved" } : r);
+        const newMovement = { ...req, status:"scheduled" };
+        const newMovements = [...movements, newMovement];
+        setRequests(updatedRequests);
+        setMovements(newMovements);
+        saveData("requests", updatedRequests);
+        saveData("movements", newMovements);
+      }
+
+      // Admin declines request
+      function declineRequest(id) {
+        const updatedRequests = requests.map(r => r.id === id ? { ...r, status:"declined" } : r);
+        setRequests(updatedRequests);
+        saveData("requests", updatedRequests);
+      }
+
+      const pendingRequests = requests.filter(r => r.status === "pending");
+      const scheduledMovements = movements;
+
+      // If not logged in, show login/sign-up forms
+      if(!user) {
+        return (
+          <div>
+            {!isSignUp ? (
+              <div>
+                <h2>Login</h2>
+                <form onSubmit={handleLogin}>
+                  <input type="email" placeholder="Email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} required />
+                  <input type="password" placeholder="Password" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} required />
+                  {error && <div style={{ color:"red" }}>{error}</div>}
+                  <button type="submit">Login</button>
+                </form>
+                <p>
+                  Don’t have an account?{" "}
+                  <button onClick={() => { setIsSignUp(true); setError(""); }}>Sign up</button>
+                </p>
+              </div>
+            ) : (
+              <div>
+                <h2>Create Account</h2>
+                <form onSubmit={handleSignUp}>
+                  <input type="email" placeholder="Email" value={signUpEmail} onChange={e=>setSignUpEmail(e.target.value)} required />
+                  <input type="password" placeholder="Password" value={signUpPassword} onChange={e=>setSignUpPassword(e.target.value)} required />
+                  <input type="password" placeholder="Confirm Password" value={signUpConfirm} onChange={e=>setSignUpConfirm(e.target.value)} required />
+                  {error && <div style={{ color:"red" }}>{error}</div>}
+                  <button type="submit">Create Account</button>
+                </form>
+                <p>
+                  Already have an account?{" "}
+                  <button onClick={() => { setIsSignUp(false); setError(""); }}>Log in</button>
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Build the tab bar based on role
+      const tabs = user.role === "admin"
+        ? [{ id:"admin", label:"Admin Review" }, { id:"agenda", label:"Agenda" }]
+        : [{ id:"request", label:"Request Movement" }, { id:"agenda", label:"Agenda" }];
 
       return (
         <div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <h2>Welcome, {user.email}</h2>
+            <button onClick={logout}>Log Out</button>
+          </div>
           <div className="tabs">
-            <button
-              onClick={() => setActiveTab('request')}
-              className={activeTab === 'request' ? 'active' : ''}>
-              Request Movement
-            </button>
-            <button
-              onClick={() => setActiveTab('admin')}
-              className={activeTab === 'admin' ? 'active' : ''}>
-              Admin Review
-            </button>
-            <button
-              onClick={() => setActiveTab('agenda')}
-              className={activeTab === 'agenda' ? 'active' : ''}>
-              Agenda
-            </button>
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={activeTab === tab.id ? "active" : ""}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          {activeTab === 'request' && (
+          {activeTab === "request" && (
             <div>
-              <h2>Request Movement</h2>
-              <form className="form" onSubmit={handleRequestSubmit}>
-                <input
-                  name="traveler"
-                  placeholder="Traveler"
-                  value={formData.traveler}
-                  onChange={handleChange}
-                  required
-                />
-                <input
-                  name="position"
-                  placeholder="Position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  required
-                />
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                />
-                <input
-                  type="time"
-                  name="showtime"
-                  value={formData.showtime}
-                  onChange={handleChange}
-                  required
-                />
-                <select
-                  name="route"
-                  value={formData.route}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Select Route</option>
-                  <option value="BEC-BDSC">BEC ↔ BDSC</option>
-                  <option value="BDSC-BEC">BDSC ↔ BEC</option>
-                </select>
-                <input
-                  name="notes"
-                  placeholder="Notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                />
+              <h3>Request Movement</h3>
+              <form onSubmit={submitRequest}>
+                <input type="text" name="fullName" placeholder="Full Name" value={formData.fullName} onChange={handleFormChange} required />
+                <input type="text" name="position" placeholder="Position" value={formData.position} onChange={handleFormChange} required />
+                <input type="date" name="date" value={formData.date} onChange={handleFormChange} required />
+                <input type="time" name="time" value={formData.time} onChange={handleFormChange} required />
+                <input type="text" name="fromLocation" placeholder="From (e.g. BEC)" value={formData.fromLocation} onChange={handleFormChange} required />
+                <input type="text" name="toLocation" placeholder="To (e.g. BDSC)" value={formData.toLocation} onChange={handleFormChange} required />
                 <button type="submit">Submit Request</button>
               </form>
             </div>
           )}
 
-          {activeTab === 'admin' && (
+          {activeTab === "admin" && (
             <div>
-              <h2>Admin Review</h2>
-              {requests.length === 0 ? (
+              <h3>Admin Review</h3>
+              {pendingRequests.length === 0 ? (
                 <p>No pending requests.</p>
               ) : (
                 <table>
                   <thead>
                     <tr>
-                      <th>Traveler</th>
+                      <th>Full Name</th>
                       <th>Position</th>
                       <th>Date</th>
-                      <th>Showtime</th>
-                      <th>Route</th>
-                      <th>Notes</th>
+                      <th>Time</th>
+                      <th>From</th>
+                      <th>To</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {requests.map((req) => (
+                    {pendingRequests.map(req => (
                       <tr key={req.id}>
-                        <td>{req.traveler}</td>
+                        <td>{req.fullName}</td>
                         <td>{req.position}</td>
                         <td>{req.date}</td>
-                        <td>{req.showtime}</td>
-                        <td>{req.route}</td>
-                        <td>{req.notes}</td>
+                        <td>{req.time}</td>
+                        <td>{req.fromLocation}</td>
+                        <td>{req.toLocation}</td>
                         <td>
                           <button onClick={() => approveRequest(req.id)}>Approve</button>
                           <button onClick={() => declineRequest(req.id)}>Decline</button>
@@ -216,32 +258,34 @@
             </div>
           )}
 
-          {activeTab === 'agenda' && (
+          {activeTab === "agenda" && (
             <div>
-              <h2>Agenda</h2>
-              {movements.length === 0 ? (
+              <h3>Agenda</h3>
+              {scheduledMovements.length === 0 ? (
                 <p>No scheduled movements.</p>
               ) : (
                 <table>
                   <thead>
                     <tr>
-                      <th>Traveler</th>
+                      <th>Full Name</th>
                       <th>Position</th>
                       <th>Date</th>
-                      <th>Showtime</th>
-                      <th>Route</th>
-                      <th>Notes</th>
+                      <th>Time</th>
+                      <th>From</th>
+                      <th>To</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {movements.map((move) => (
-                      <tr key={move.id}>
-                        <td>{move.traveler}</td>
-                        <td>{move.position}</td>
-                        <td>{move.date}</td>
-                        <td>{move.showtime}</td>
-                        <td>{move.route}</td>
-                        <td>{move.notes}</td>
+                    {scheduledMovements.map(mov => (
+                      <tr key={mov.id}>
+                        <td>{mov.fullName}</td>
+                        <td>{mov.position}</td>
+                        <td>{mov.date}</td>
+                        <td>{mov.time}</td>
+                        <td>{mov.fromLocation}</td>
+                        <td>{mov.toLocation}</td>
+                        <td>{mov.status}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -251,9 +295,9 @@
           )}
         </div>
       );
-    };
+    }
 
-    ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+    ReactDOM.render(<App />, document.getElementById("root"));
   </script>
 </body>
 </html>

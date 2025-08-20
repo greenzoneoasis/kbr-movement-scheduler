@@ -142,6 +142,29 @@
       function getData(key) { return JSON.parse(localStorage.getItem(key) || '[]'); }
       function saveData(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 
+      // Invitation helpers
+      // Retrieve list of invitations from localStorage
+      function getInvites() {
+        return JSON.parse(localStorage.getItem('invites') || '[]');
+      }
+
+      // Save invitations list back to localStorage
+      function saveInvites(invites) {
+        localStorage.setItem('invites', JSON.stringify(invites));
+      }
+
+      // Create a new invitation for a given email address. Returns the query string to append to the URL.
+      function sendInvitation(email) {
+        const invites = getInvites();
+        // Avoid duplicate invitations
+        if (!invites.find(inv => inv.email === email)) {
+          invites.push({ email: email, invited: true });
+          saveInvites(invites);
+        }
+        // Provide a query string that can be used to sign up
+        return '?invite=' + encodeURIComponent(email);
+      }
+
       function App() {
         const [user, setUser] = React.useState(null);
         const [loginEmail, setLoginEmail] = React.useState('');
@@ -151,6 +174,20 @@
         const [requests, setRequests] = React.useState(() => getData('requests'));
         const [movements, setMovements] = React.useState(() => getData('movements'));
         const [formData, setFormData] = React.useState({ fullName: '', position: '', date: '', time: '', fromLocation: '', toLocation: '' });
+        // Determine if this page is being used for invitation-based sign-up
+        const inviteEmailParam = React.useMemo(() => {
+          const params = new URLSearchParams(window.location.search);
+          return params.get('invite');
+        }, []);
+
+        // Invitation and user management states
+        const [showInviteForm, setShowInviteForm] = React.useState(false);
+        const [inviteEmail, setInviteEmail] = React.useState('');
+        const [inviteMessage, setInviteMessage] = React.useState('');
+
+        // Sign-up via invitation states
+        const [signUpPassword, setSignUpPassword] = React.useState('');
+        const [signUpConfirm, setSignUpConfirm] = React.useState('');
 
         // Login handler
         function handleLogin(e) {
@@ -210,11 +247,84 @@
           saveData('requests', updatedRequests);
         }
 
+        // Submit invitation form from the Users tab
+        function handleInviteSubmit(e) {
+          e.preventDefault();
+          setError('');
+          setInviteMessage('');
+          const email = inviteEmail.trim().toLowerCase();
+          if (!email) {
+            setInviteMessage('Please provide a valid email.');
+            return;
+          }
+          // Prevent inviting existing users
+          const usersList = getUsers();
+          if (usersList.find(u => u.email === email)) {
+            setInviteMessage('User already exists.');
+            setInviteEmail('');
+            setShowInviteForm(false);
+            return;
+          }
+          // Prevent duplicate invitations
+          const invites = getInvites();
+          if (invites.find(inv => inv.email === email)) {
+            setInviteMessage('An invitation has already been sent to this email.');
+            setInviteEmail('');
+            setShowInviteForm(false);
+            return;
+          }
+          const linkQuery = sendInvitation(email);
+          const invitationLink = window.location.origin + linkQuery;
+          setInviteMessage('Invitation recorded. Please email the recipient this link: ' + invitationLink);
+          setInviteEmail('');
+          setShowInviteForm(false);
+        }
+
+        // Handle setting password for invited users
+        function handleInviteSignup(e) {
+          e.preventDefault();
+          setError('');
+          if (signUpPassword !== signUpConfirm) {
+            setError('Passwords do not match');
+            return;
+          }
+          const email = inviteEmailParam.trim().toLowerCase();
+          let usersList = getUsers();
+          if (usersList.find(u => u.email === email)) {
+            setError('Account already exists. Please log in instead.');
+            return;
+          }
+          const newUser = { name: deriveName(email), email: email, password: signUpPassword, role: 'client' };
+          usersList.push(newUser);
+          saveUsers(usersList);
+          // Remove invitation
+          const remainingInvites = getInvites().filter(inv => inv.email !== email);
+          saveInvites(remainingInvites);
+          // Redirect back to login
+          window.location.href = window.location.origin;
+        }
+
         const pendingRequests = requests.filter(r => r.status === 'pending');
         const scheduledMovements = movements;
 
-        // If not logged in, show only the login form. Sign-up is disabled and must be handled via invitations.
+        // If not logged in, either show the invitation sign‑up form (when arriving via invite link) or the login form.
         if (!user) {
+          // Invitation sign‑up flow
+          if (inviteEmailParam) {
+            return (
+              <div>
+                <h2>Set Your Password</h2>
+                <p>Please set a password for your new account ({inviteEmailParam}).</p>
+                <form onSubmit={handleInviteSignup}>
+                  <input type="password" placeholder="Enter Password" value={signUpPassword} onChange={e => setSignUpPassword(e.target.value)} required />
+                  <input type="password" placeholder="Re-Enter Password" value={signUpConfirm} onChange={e => setSignUpConfirm(e.target.value)} required />
+                  {error && <div className="error">{error}</div>}
+                  <button type="submit">Set Password</button>
+                </form>
+              </div>
+            );
+          }
+          // Default login flow
           return (
             <div>
               <h2>Login</h2>
@@ -231,6 +341,7 @@
         // Build the tab bar based on role
         const tabs = user.role === 'admin' ? [
           { id: 'admin', label: 'Admin Review' },
+          { id: 'users', label: 'Users' },
           { id: 'agenda', label: 'Agenda' },
         ] : [
           { id: 'request', label: 'Request Movement' },
@@ -340,6 +451,38 @@
                     </tbody>
                   </table>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'users' && (
+              <div>
+                <h3>Users</h3>
+                <button onClick={() => setShowInviteForm(!showInviteForm)}>Invite</button>
+                {showInviteForm && (
+                  <form onSubmit={handleInviteSubmit} style={{ marginTop: '10px' }}>
+                    <input type="email" placeholder="Email address" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} required />
+                    <button type="submit">Send Invitation</button>
+                  </form>
+                )}
+                {inviteMessage && <p style={{ marginTop: '10px' }}>{inviteMessage}</p>}
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getUsers().map(u => (
+                      <tr key={u.email}>
+                        <td>{u.name || deriveName(u.email)}</td>
+                        <td>{u.email}</td>
+                        <td>{u.role}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
 

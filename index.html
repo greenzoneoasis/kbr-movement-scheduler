@@ -48,7 +48,7 @@
         gap: 10px;
         margin-bottom: 20px;
         /* Narrow the form so fields are not overly wide */
-        max-width: 360px;
+        max-width: 320px;
         margin-left: auto;
         margin-right: auto;
       }
@@ -269,6 +269,38 @@
                   <input type="text" name="toLocation" placeholder="To (e.g. BDSC)" value={formData.toLocation} onChange={handleFormChange} required />
                   <button type="submit">Submit Request</button>
                 </form>
+                {/* Pending requests list for clients */}
+                {pendingRequests.length > 0 && (
+                  <div style={{ marginTop: '20px' }}>
+                    <h4>Pending Requests</h4>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Full Name</th>
+                          <th>Position</th>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>From</th>
+                          <th>To</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingRequests.map(req => (
+                          <tr key={req.id}>
+                            <td>{req.fullName}</td>
+                            <td>{req.position}</td>
+                            <td>{req.date}</td>
+                            <td>{req.time}</td>
+                            <td>{req.fromLocation}</td>
+                            <td>{req.toLocation}</td>
+                            <td>{req.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

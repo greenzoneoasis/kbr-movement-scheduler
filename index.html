@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Movement Scheduler with Supabase</title>
+    <!--
+      This version of the movement scheduler demonstrates how to persist data to
+      a remote Supabase database instead of the browser's localStorage. The
+      original app stored users, requests, movements and invitations directly
+      in the user's browser. That meant each browser had its own copy of the
+      data and an admin couldn't see requests created on another device. By
+      moving persistence to Supabase we centralise our state so that every
+      client sees the same information. Use your own Supabase project URL
+      and anon key below – you can find these in the Supabase dashboard. The
+      Supabase JavaScript client is imported via CDN as described in the
+      official documentation.
+
+      IMPORTANT: For the app to work with the anonymous key, you must disable Row Level Security (RLS)
+      on all tables (users, requests, movements, invites) in your Supabase dashboard,
+      or add policies allowing selects, inserts, updates, and deletes for the 'anon' role.
+      Go to Authentication > Row Level Security for each table and toggle RLS off, or create policies like:
+      CREATE POLICY "Allow all for anon" ON table_name FOR ALL TO anon USING (true) WITH CHECK (true);
+      Note: Disabling RLS makes the database publicly writable, which is insecure for production.
+      For a secure app, use Supabase Auth instead of custom login.
+    -->
     <style>
       /* Page layout */
       body {
@@ -149,6 +169,7 @@
         const [inviteMessage, setInviteMessage] = React.useState('');
         const [signUpPassword, setSignUpPassword] = React.useState('');
         const [signUpConfirm, setSignUpConfirm] = React.useState('');
+        const [requestError, setRequestError] = React.useState('');
         const inviteEmailParam = React.useMemo(() => {
           const params = new URLSearchParams(window.location.search);
           return params.get('invite');
@@ -212,6 +233,7 @@
         }
         async function submitRequest(e) {
           e.preventDefault();
+          setRequestError('');
           const newReq = {
             fullName: formData.fullName,
             position: formData.position,
@@ -236,6 +258,8 @@
               toLocation: ''
             });
           } else {
+            const errMsg = insertErr ? insertErr.message : 'Unknown error';
+            setRequestError(errMsg);
             console.error('Failed to insert request', insertErr);
           }
         }
@@ -490,6 +514,7 @@
                     required
                   />
                   <button type="submit">Submit Request</button>
+                  {requestError && <div className="error">{requestError}</div>}
                 </form>
                 {pendingRequests.length > 0 && (
                   <div style={{ marginTop: '20px' }}>

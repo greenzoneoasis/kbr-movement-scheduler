@@ -341,8 +341,8 @@
         // Build the tab bar based on role
         const tabs = user.role === 'admin' ? [
           { id: 'admin', label: 'Admin Review' },
-          { id: 'users', label: 'Users' },
           { id: 'agenda', label: 'Agenda' },
+          { id: 'users', label: 'Users' },
         ] : [
           { id: 'request', label: 'Request Movement' },
           { id: 'agenda', label: 'Agenda' },
@@ -456,15 +456,17 @@
 
             {activeTab === 'users' && (
               <div>
-                <h3>Users</h3>
-                <button onClick={() => setShowInviteForm(!showInviteForm)}>Invite</button>
+                {/* Invite button aligned to the right */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                  <button onClick={() => setShowInviteForm(!showInviteForm)}>Invite</button>
+                </div>
                 {showInviteForm && (
-                  <form onSubmit={handleInviteSubmit} style={{ marginTop: '10px' }}>
+                  <form onSubmit={handleInviteSubmit} style={{ marginBottom: '10px' }}>
                     <input type="email" placeholder="Email address" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} required />
                     <button type="submit">Send Invitation</button>
                   </form>
                 )}
-                {inviteMessage && <p style={{ marginTop: '10px' }}>{inviteMessage}</p>}
+                {inviteMessage && <p style={{ marginBottom: '10px' }}>{inviteMessage}</p>}
                 <table>
                   <thead>
                     <tr>

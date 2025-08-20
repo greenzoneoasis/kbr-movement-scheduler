@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KBR Movement Scheduler</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f7f7f7;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tabs button {
+      padding: 10px 15px;
+      border: none;
+      background-color: #eee;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .tabs button.active {
+      background-color: #0070f3;
+      color: white;
+    }
+    form.form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    form.form input,
+    form.form select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form.form button {
+      padding: 10px 15px;
+      background-color: #0070f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table th, table td {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+    }
+    table th {
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+    const App = () => {
+      const [activeTab, setActiveTab] = useState('request');
+      const [requests, setRequests] = useState([]);
+      const [movements, setMovements] = useState([]);
+      const [formData, setFormData] = useState({
+        traveler: '',
+        position: '',
+        date: '',
+        showtime: '',
+        route: '',
+        notes: ''
+      });
+
+      const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+      };
+
+      const handleRequestSubmit = (e) => {
+        e.preventDefault();
+        const id = Date.now().toString();
+        setRequests([...requests, { id, ...formData, status: 'pending' }]);
+        setFormData({ traveler:'', position:'', date:'', showtime:'', route:'', notes:'' });
+      };
+
+      const approveRequest = (id) => {
+        const req = requests.find(r => r.id === id);
+        if (req) {
+          setMovements([...movements, { ...req }]);
+          setRequests(requests.filter(r => r.id !== id));
+        }
+      };
+
+      const declineRequest = (id) => {
+        setRequests(requests.filter(r => r.id !== id));
+      };
+
+      return (
+        <div>
+          <div className="tabs">
+            <button
+              onClick={() => setActiveTab('request')}
+              className={activeTab === 'request' ? 'active' : ''}>
+              Request Movement
+            </button>
+            <button
+              onClick={() => setActiveTab('admin')}
+              className={activeTab === 'admin' ? 'active' : ''}>
+              Admin Review
+            </button>
+            <button
+              onClick={() => setActiveTab('agenda')}
+              className={activeTab === 'agenda' ? 'active' : ''}>
+              Agenda
+            </button>
+          </div>
+
+          {activeTab === 'request' && (
+            <div>
+              <h2>Request Movement</h2>
+              <form className="form" onSubmit={handleRequestSubmit}>
+                <input
+                  name="traveler"
+                  placeholder="Traveler"
+                  value={formData.traveler}
+                  onChange={handleChange}
+                  required
+                />
+                <input
+                  name="position"
+                  placeholder="Position"
+                  value={formData.position}
+                  onChange={handleChange}
+                  required
+                />
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  required
+                />
+                <input
+                  type="time"
+                  name="showtime"
+                  value={formData.showtime}
+                  onChange={handleChange}
+                  required
+                />
+                <select
+                  name="route"
+                  value={formData.route}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Route</option>
+                  <option value="BEC-BDSC">BEC ↔ BDSC</option>
+                  <option value="BDSC-BEC">BDSC ↔ BEC</option>
+                </select>
+                <input
+                  name="notes"
+                  placeholder="Notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                />
+                <button type="submit">Submit Request</button>
+              </form>
+            </div>
+          )}
+
+          {activeTab === 'admin' && (
+            <div>
+              <h2>Admin Review</h2>
+              {requests.length === 0 ? (
+                <p>No pending requests.</p>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Traveler</th>
+                      <th>Position</th>
+                      <th>Date</th>
+                      <th>Showtime</th>
+                      <th>Route</th>
+                      <th>Notes</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requests.map((req) => (
+                      <tr key={req.id}>
+                        <td>{req.traveler}</td>
+                        <td>{req.position}</td>
+                        <td>{req.date}</td>
+                        <td>{req.showtime}</td>
+                        <td>{req.route}</td>
+                        <td>{req.notes}</td>
+                        <td>
+                          <button onClick={() => approveRequest(req.id)}>Approve</button>
+                          <button onClick={() => declineRequest(req.id)}>Decline</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'agenda' && (
+            <div>
+              <h2>Agenda</h2>
+              {movements.length === 0 ? (
+                <p>No scheduled movements.</p>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Traveler</th>
+                      <th>Position</th>
+                      <th>Date</th>
+                      <th>Showtime</th>
+                      <th>Route</th>
+                      <th>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {movements.map((move) => (
+                      <tr key={move.id}>
+                        <td>{move.traveler}</td>
+                        <td>{move.position}</td>
+                        <td>{move.date}</td>
+                        <td>{move.showtime}</td>
+                        <td>{move.route}</td>
+                        <td>{move.notes}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+  </script>
+</body>
+</html>

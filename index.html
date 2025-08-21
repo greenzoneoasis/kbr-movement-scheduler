@@ -505,18 +505,34 @@
         }
 
         // Compute derived lists
+        // Only show requests that are still pending in the Pending Requests tab.
         const pendingRequests = requests.filter(r => r.status === 'pending');
+        // Scheduled movements include all entries in the movements table.
         const scheduledMovements = movements;
         // Past movements: any movement whose date is prior to today.  We
         // convert both the movement date and the current date to ISO
         // strings (YYYY‑MM‑DD) for easy string comparison.
         const todayStr = new Date().toISOString().split('T')[0];
         const pastMovements = movements.filter(mov => mov.date < todayStr);
-        // If the user is not an admin only show their own past movements
-        const pastMovementsForUser =
-          user.role === 'admin'
-            ? pastMovements
-            : pastMovements.filter(mov => mov.requestedBy === (user.name || ''));
+        /*
+         * Determine which past movements to show. When the user is not
+         * logged in yet (i.e. user is null) we don't want to reference
+         * properties on `user` as that will throw an exception and break
+         * the rendering. Once a user is logged in we decide if they are
+         * an admin or a regular client and filter accordingly. Admins see
+         * all past movements, whereas clients see only movements they
+         * requested (matched via the `requestedBy` property). If no user
+         * exists yet we simply return an empty array so the history tab
+         * doesn't render anything until after login.
+         */
+        let pastMovementsForUser;
+        if (!user) {
+          pastMovementsForUser = [];
+        } else if (user.role === 'admin') {
+          pastMovementsForUser = pastMovements;
+        } else {
+          pastMovementsForUser = pastMovements.filter(mov => mov.requestedBy === (user.name || ''));
+        }
 
         // If the user is not logged in we show either the invitation sign‑up
         // form or the login form.

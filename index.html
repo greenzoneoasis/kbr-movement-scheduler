@@ -156,6 +156,23 @@
         margin-top: 10px;
       }
 
+      /* Form rows align labels and inputs horizontally */
+      .form-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .form-row label {
+        min-width: 90px;
+        font-weight: 600;
+        color: #495057;
+        text-align: right;
+      }
+      .form-row input,
+      .form-row select {
+        flex: 1;
+      }
+
     </style>
     <!-- React and Supabase dependencies. We rely on the global `supabase`
          variable after loading the client via CDN as described in the Supabase
@@ -575,51 +592,73 @@
               <div>
                 <h3>Request Movement</h3>
                 <form onSubmit={submitRequest}>
-                  <input
-                    type="text"
-                    name="fullName"
-                    placeholder="Full Name"
-                    value={formData.fullName}
-                    onChange={handleFormChange}
-                    required
-                  />
-                  <input
-                    type="text"
-                    name="position"
-                    placeholder="Position"
-                    value={formData.position}
-                    onChange={handleFormChange}
-                    required
-                  />
-                  <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleFormChange}
-                    required
-                  />
-                  <input
-                    type="time"
-                    name="time"
-                    value={formData.time}
-                    onChange={handleFormChange}
-                    required
-                  />
-                  {/* Route dropdown replaces separate from/to inputs.  Each
-                      option encodes a full journey. */}
-                  <label>Route</label>
-                  <select
-                    name="route"
-                    value={formData.route}
-                    onChange={handleFormChange}
-                    required
-                  >
-                    <option value="">Select a route</option>
-                    <option value="BEC → BDSC">BEC → BDSC</option>
-                    <option value="BDSC → BEC">BDSC → BEC</option>
-                    <option value="Union III → BDSC">Union III → BDSC</option>
-                    <option value="BDSC → Union III">BDSC → Union III</option>
-                  </select>
+                  {/* Name field */}
+                  <div className="form-row">
+                    <label htmlFor="fullName">Name:</label>
+                    <input
+                      type="text"
+                      id="fullName"
+                      name="fullName"
+                      placeholder="Full Name"
+                      value={formData.fullName}
+                      onChange={handleFormChange}
+                      required
+                    />
+                  </div>
+                  {/* Position field */}
+                    <div className="form-row">
+                      <label htmlFor="position">Position:</label>
+                      <input
+                        type="text"
+                        id="position"
+                        name="position"
+                        placeholder="Position"
+                        value={formData.position}
+                        onChange={handleFormChange}
+                        required
+                      />
+                    </div>
+                  {/* Date field */}
+                    <div className="form-row">
+                      <label htmlFor="date">Date:</label>
+                      <input
+                        type="date"
+                        id="date"
+                        name="date"
+                        value={formData.date}
+                        onChange={handleFormChange}
+                        required
+                      />
+                    </div>
+                  {/* Time field */}
+                    <div className="form-row">
+                      <label htmlFor="time">Time:</label>
+                      <input
+                        type="time"
+                        id="time"
+                        name="time"
+                        value={formData.time}
+                        onChange={handleFormChange}
+                        required
+                      />
+                    </div>
+                  {/* Route dropdown: full journey encoded in value */}
+                  <div className="form-row">
+                    <label htmlFor="route">Route:</label>
+                    <select
+                      id="route"
+                      name="route"
+                      value={formData.route}
+                      onChange={handleFormChange}
+                      required
+                    >
+                      <option value="">Select a route</option>
+                      <option value="BEC → BDSC">BEC → BDSC</option>
+                      <option value="BDSC → BEC">BDSC → BEC</option>
+                      <option value="Union III → BDSC">Union III → BDSC</option>
+                      <option value="BDSC → Union III">BDSC → Union III</option>
+                    </select>
+                  </div>
                   <button type="submit">Submit Request</button>
                 </form>
                 {/* Pending requests list for clients */}

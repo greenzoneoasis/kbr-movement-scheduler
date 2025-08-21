@@ -166,18 +166,13 @@
         min-width: 90px;
         font-weight: 600;
         color: #495057;
-        text-align: left;
+        text-align: right;
       }
       .form-row input,
       .form-row select {
-        flex: 50%;
+        flex: 1;
       }
 
-       form button[type="submit"] {
-    flex: none;
-    width: 160px;
-    align-self: center;
-  }
     </style>
     <!-- React and Supabase dependencies. We rely on the global `supabase`
          variable after loading the client via CDN as described in the Supabase
@@ -199,8 +194,8 @@
       // the anonymous public key in your project settings. The Supabase
       // client is created once and reused throughout the application.
       const { createClient } = supabase;
-      const SUPABASE_URL = 'https://dpkegvaoldfkuorudnzy.supabase.co';
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwa2VndmFvbGRma3VvcnVkbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNzM3MzIsImV4cCI6MjA3MDk0OTczMn0.5sCNX68dJ1ZHT0Wj_HH3HTLwqQzKO2gq_QPtFOXQ4eQ';
+      const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+      const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
       const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
       // Hard-coded admin credentials. These are added to the database on
@@ -346,8 +341,13 @@
             .insert([newReq])
             .select();
           if (!insertErr && inserted && inserted.length > 0) {
+            // Inject who requested this movement for display purposes.
+            const withRequester = {
+              ...inserted[0],
+              requestedBy: user ? user.name : ''
+            };
             // Update local state with the new request
-            setRequests(prev => [...prev, inserted[0]]);
+            setRequests(prev => [...prev, withRequester]);
             // Reset the form.  Since we only have a single route field, we
             // clear it here instead of from/to pairs.
             setFormData({
@@ -678,7 +678,7 @@
                           <th>Date</th>
                           <th>Time</th>
                           <th>Route</th>
-                          <th>Status</th>
+                          <th>Requested By</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -689,7 +689,7 @@
                             <td>{req.date}</td>
                             <td>{req.time}</td>
                             <td>{req.route}</td>
-                            <td>{req.status}</td>
+                            <td>{req.requestedBy}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -713,6 +713,7 @@
                         <th>Date</th>
                         <th>Time</th>
                         <th>Route</th>
+                        <th>Requested By</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -724,6 +725,7 @@
                           <td>{req.date}</td>
                           <td>{req.time}</td>
                           <td>{req.route}</td>
+                          <td>{req.requestedBy}</td>
                           <td>
                             <button onClick={() => approveRequest(req.id)}>Approve</button>
                             <button onClick={() => declineRequest(req.id)}>Decline</button>

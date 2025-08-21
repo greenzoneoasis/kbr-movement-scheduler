@@ -383,7 +383,9 @@
             date: req.date,
             time: req.time,
             route: req.route,
-            status: 'scheduled'
+            status: 'scheduled',
+            // carry over who originally submitted the request for history filtering
+            requestedBy: req.requestedBy
           };
           const { data: insertedMov, error: movErr } = await db
             .from('movements')
@@ -505,6 +507,16 @@
         // Compute derived lists
         const pendingRequests = requests.filter(r => r.status === 'pending');
         const scheduledMovements = movements;
+        // Past movements: any movement whose date is prior to today.  We
+        // convert both the movement date and the current date to ISO
+        // strings (YYYY‑MM‑DD) for easy string comparison.
+        const todayStr = new Date().toISOString().split('T')[0];
+        const pastMovements = movements.filter(mov => mov.date < todayStr);
+        // If the user is not an admin only show their own past movements
+        const pastMovementsForUser =
+          user.role === 'admin'
+            ? pastMovements
+            : pastMovements.filter(mov => mov.requestedBy === (user.name || ''));
 
         // If the user is not logged in we show either the invitation sign‑up
         // form or the login form.
@@ -566,11 +578,13 @@
             ? [
                 { id: 'admin', label: 'Admin Review' },
                 { id: 'agenda', label: 'Agenda' },
+                { id: 'history', label: 'History' },
                 { id: 'users', label: 'Users' }
               ]
             : [
                 { id: 'request', label: 'Request Movement' },
-                { id: 'agenda', label: 'Agenda' }
+                { id: 'agenda', label: 'Agenda' },
+                { id: 'history', label: 'History' }
               ];
 
         const displayName = user.name || deriveName(user.email);
@@ -797,6 +811,40 @@
                     </thead>
                     <tbody>
                       {scheduledMovements.map(mov => (
+                        <tr key={mov.id}>
+                          <td>{mov.fullName}</td>
+                          <td>{mov.position}</td>
+                          <td>{mov.date}</td>
+                          <td>{mov.time}</td>
+                          <td>{mov.route}</td>
+                          <td>{mov.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'history' && (
+              <div>
+                <h3>History</h3>
+                {pastMovementsForUser.length === 0 ? (
+                  <p>No past movements.</p>
+                ) : (
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Full Name</th>
+                        <th>Position</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Route</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pastMovementsForUser.map(mov => (
                         <tr key={mov.id}>
                           <td>{mov.fullName}</td>
                           <td>{mov.position}</td>

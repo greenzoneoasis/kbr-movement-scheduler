@@ -1,0 +1,29 @@
+{
+  "name": "transport-app-client",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@fullcalendar/daygrid": "^6.1.8",
+    "@fullcalendar/react": "^6.1.8",
+    "@mui/icons-material": "^5.14.0",
+    "@mui/material": "^5.14.4",
+    "axios": "^1.4.0",
+    "chart.js": "^4.3.0",
+    "jwt-decode": "^3.1.2",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.14.1",
+    "react-scripts": "5.0.1",
+    "react-toastify": "^9.1.2"
+  },
+  "proxy": "http://localhost:5000",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  }
+}
